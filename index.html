@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#02403D">
+<title>Despesas Família</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --verde: #02403D;
+  --lime: #D9FF00;
+  --muted: #ADC7C7;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--verde);
+  font-family: -apple-system, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--verde);
+  padding: env(safe-area-inset-top, 16px) 20px 18px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.hdr-icon {
+  width: 40px; height: 40px; border-radius: 11px;
+  background: var(--lime); display: flex; align-items: center;
+  justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.hdr h1 { color: var(--lime); font-size: 17px; font-weight: 700; }
+.hdr p  { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+/* ── CARD ── */
+.card {
+  background: white;
+  flex: 1;
+  border-radius: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+/* ── FORM ── */
+.body { padding: 22px 18px 40px; }
+
+.field { margin-bottom: 18px; }
+
+label {
+  display: block; font-size: 13px;
+  font-weight: 600; color: #444; margin-bottom: 8px;
+}
+label .opt { color: #ccc; font-weight: 400; }
+
+.amount-wrap { position: relative; }
+.sym {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px; font-weight: 700; color: #ccc;
+  pointer-events: none; transition: color .15s;
+}
+input[type=number] {
+  width: 100%; padding: 14px 14px 14px 36px;
+  font-size: 26px; font-weight: 700; color: var(--verde);
+  border: 1.5px solid #e0e0e0; border-radius: 13px;
+  background: #fafafa; font-family: inherit; outline: none;
+  -webkit-appearance: none;
+}
+input[type=number]:focus { border-color: var(--verde); }
+
+input[type=date], textarea {
+  width: 100%; padding: 12px 14px; font-size: 15px;
+  border: 1.5px solid #e0e0e0; border-radius: 13px;
+  background: #fafafa; color: #111; font-family: inherit;
+  outline: none; -webkit-appearance: none;
+}
+input[type=date]:focus, textarea:focus { border-color: var(--verde); }
+textarea { min-height: 68px; resize: vertical; }
+
+/* ── CATEGORIAS ── */
+.section-label {
+  font-size: 11px; font-weight: 700; color: #bbb;
+  text-transform: uppercase; letter-spacing: .08em;
+  margin: 16px 0 8px;
+}
+.cat-grid { display: grid; gap: 8px; }
+.cat-btn {
+  padding: 11px 6px 10px;
+  border: 1.5px solid #e8e8e8; border-radius: 12px;
+  background: #fafafa; color: #666; font-size: 12px;
+  cursor: pointer; text-align: center; font-family: inherit;
+  line-height: 1.3; transition: transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-btn.active { font-weight: 700; transform: scale(1.04); }
+.cat-icon { display: block; font-size: 18px; margin-bottom: 4px; }
+
+/* ── BOTÃO ── */
+.btn-submit {
+  width: 100%; padding: 17px; border: none; border-radius: 14px;
+  background: var(--verde); color: var(--lime);
+  font-size: 17px; font-weight: 700; cursor: pointer;
+  font-family: inherit; margin-top: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .15s;
+}
+.btn-submit:disabled { background: #e0e0e0; color: #aaa; cursor: not-allowed; }
+.btn-submit:active:not(:disabled) { opacity: .85; }
+
+/* ── OVERLAY DUPLICADO ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 200;
+  align-items: center; justify-content: center; padding: 24px;
+}
+.overlay.show { display: flex; }
+.dup-card {
+  background: white; border-radius: 20px;
+  padding: 26px 22px; max-width: 400px; width: 100%;
+}
+.dup-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.dup-card p { font-size: 14px; color: #555; margin-bottom: 14px; line-height: 1.6; }
+.dup-hint {
+  background: #fff8e1; border: 1px solid #ffe082;
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 13px; color: #795548; margin-bottom: 18px;
+}
+.dup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dup-btns button {
+  padding: 13px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-cancel { border: 1.5px solid #ddd; background: white; color: #555; }
+.btn-confirm { border: none; background: var(--verde); color: var(--lime); }
+
+/* ── SUCESSO ── */
+.success-view {
+  padding: 40px 20px 48px; text-align: center; display: none;
+}
+.success-circle {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: #e8f5e9; margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center; font-size: 34px;
+}
+.success-view h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.success-view > p { font-size: 14px; color: #888; margin-bottom: 26px; }
+.summary-card {
+  background: #f8f8f8; border-radius: 14px;
+  padding: 14px 18px; text-align: left; margin-bottom: 24px;
+}
+.s-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 0; border-bottom: 1px solid #efefef;
+}
+.s-row:last-child { border-bottom: none; }
+.s-label { font-size: 13px; color: #999; }
+.s-val { font-size: 14px; font-weight: 600; color: #111; text-align: right; }
+.s-valor { font-size: 22px; font-weight: 800; color: var(--verde); }
+.btn-reset {
+  width: 100%; padding: 15px; border: 1.5px solid #e0e0e0;
+  border-radius: 14px; background: white; color: #333;
+  font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+
+/* ── SPINNER ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(217,255,0,.3);
+  border-top: 2.5px solid var(--lime);
+  border-radius: 50%; animation: spin .7s linear infinite;
+  display: inline-block; vertical-align: middle;
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-icon">💸</div>
+  <div>
+    <h1>Despesas Família</h1>
+    <p>Partilhado · sincroniza com Google Sheets</p>
+  </div>
+</div>
+
+<div class="card">
+
+  <!-- ── FORMULÁRIO ── -->
+  <div class="body" id="form-view">
+
+    <div class="field">
+      <label>Valor</label>
+      <div class="amount-wrap">
+        <span class="sym" id="sym">€</span>
+        <input type="number" id="valor" min="0" step="0.01" placeholder="0,00"
+          oninput="document.getElementById('sym').style.color=this.value?'#02403D':'#ccc'">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Categoria</label>
+
+      <div class="section-label">Alimentação</div>
+      <div class="cat-grid" style="grid-template-columns:1fr 1fr">
+        <button class="cat-btn" data-cat="Alimentação / Supermercado" data-bg="#e8f5e9" data-accent="#2e7d32" onclick="sel(this)">
+          <span class="cat-icon">🛒</span>Supermercado
+        </button>
+        <button class="cat-btn" data-cat="Restaurantes / Cafés" data-bg="#e8f5e9" data-accent="#2e7d32" onclick="sel(this)">
+          <span class="cat-icon">☕</span>Restaurantes
+        </button>
+      </div>
+
+      <div class="section-label">Casa</div>
+      <div class="cat-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cat-btn" data-cat="Renda" data-bg="#e3f2fd" data-accent="#1565c0" onclick="sel(this)">
+          <span class="cat-icon">🏠</span>Renda
+        </button>
+        <button class="cat-btn" data-cat="Água" data-bg="#e3f2fd" data-accent="#1565c0" onclick="sel(this)">
+          <span class="cat-icon">💧</span>Água
+        </button>
+        <button class="cat-btn" data-cat="Luz" data-bg="#e3f2fd" data-accent="#1565c0" onclick="sel(this)">
+          <span class="cat-icon">⚡</span>Luz
+        </button>
+        <button class="cat-btn" data-cat="Gás" data-bg="#e3f2fd" data-accent="#1565c0" onclick="sel(this)">
+          <span class="cat-icon">🔥</span>Gás
+        </button>
+        <button class="cat-btn" data-cat="Casa" data-bg="#e3f2fd" data-accent="#1565c0" onclick="sel(this)">
+          <span class="cat-icon">🔧</span>Casa (extra)
+        </button>
+      </div>
+
+      <div class="section-label">Trabalho Gonçalo</div>
+      <div class="cat-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cat-btn" data-cat="Trabalho · Renda Ginásio" data-bg="#ede7f6" data-accent="#4527a0" onclick="sel(this)">
+          <span class="cat-icon">💪</span>Renda Ginásio
+        </button>
+        <button class="cat-btn" data-cat="Trabalho · Segurança Social" data-bg="#ede7f6" data-accent="#4527a0" onclick="sel(this)">
+          <span class="cat-icon">🏛️</span>Seg. Social
+        </button>
+        <button class="cat-btn" data-cat="Trabalho · Extra" data-bg="#ede7f6" data-accent="#4527a0" onclick="sel(this)">
+          <span class="cat-icon">💼</span>Extra
+        </button>
+      </div>
+
+      <div class="section-label">Pessoal</div>
+      <div class="cat-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <button class="cat-btn" data-cat="Transportes / Combustível" data-bg="#fff8e1" data-accent="#e65100" onclick="sel(this)">
+          <span class="cat-icon">🚗</span>Transportes
+        </button>
+        <button class="cat-btn" data-cat="Saúde / Farmácia" data-bg="#fff8e1" data-accent="#e65100" onclick="sel(this)">
+          <span class="cat-icon">💊</span>Saúde
+        </button>
+        <button class="cat-btn" data-cat="Lazer / Entretenimento" data-bg="#fff8e1" data-accent="#e65100" onclick="sel(this)">
+          <span class="cat-icon">🎬</span>Lazer
+        </button>
+        <button class="cat-btn" data-cat="Roupa / Compras" data-bg="#fff8e1" data-accent="#e65100" onclick="sel(this)">
+          <span class="cat-icon">👕</span>Roupa
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Descrição <span class="opt">(opcional)</span></label>
+      <textarea id="desc" placeholder="ex: Continente, fatura EDP..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="data">
+    </div>
+
+    <button class="btn-submit" id="btn-submit" onclick="enviar(false)">
+      Registar despesa
+    </button>
+  </div>
+
+  <!-- ── OVERLAY DUPLICADO ── -->
+  <div class="overlay" id="overlay-dup">
+    <div class="dup-card">
+      <h3>⚠️ Possível duplicado</h3>
+      <p id="dup-msg"></p>
+      <div class="dup-hint">💡 Podes ter registado o mesmo que a tua mulher, ou vice-versa.</div>
+      <div class="dup-btns">
+        <button class="btn-cancel" onclick="fecharDup()">Cancelar</button>
+        <button class="btn-confirm" onclick="enviar(true)">Registar mesmo assim</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUCESSO ── -->
+  <div class="success-view" id="success-view">
+    <div class="success-circle">✅</div>
+    <h2>Despesa registada!</h2>
+    <p>Adicionada à Google Sheet partilhada</p>
+    <div class="summary-card" id="summary-card"></div>
+    <button class="btn-reset" onclick="resetForm()">+ Registar outra despesa</button>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwHrrzSkWEQBkD2ipcKZeoz8PylP_RBRGXX7TAvYMnTn_PdrpDIwQeSK8qD-Xx6_yj/exec';
+
+let cat = '';
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+
+function sel(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.style.background = '#fafafa';
+    b.style.borderColor = '#e8e8e8';
+    b.style.color = '#666';
+    b.style.fontWeight = '400';
+    b.classList.remove('active');
+  });
+  btn.style.background  = btn.dataset.bg;
+  btn.style.borderColor = btn.dataset.accent;
+  btn.style.color       = btn.dataset.accent;
+  btn.style.fontWeight  = '700';
+  btn.classList.add('active');
+  cat = btn.dataset.cat;
+}
+
+function enviar(confirmar) {
+  const valor = document.getElementById('valor').value;
+  const desc  = document.getElementById('desc').value;
+  const data  = document.getElementById('data').value;
+  if (!valor || !cat) { alert('Preenche o valor e seleciona uma categoria.'); return; }
+
+  fecharDup();
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> A registar...';
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ valor, categoria: cat, descricao: desc, data, confirmar })
+  })
+  .then(() => {
+    // no-cors não devolve resposta — assumimos sucesso
+    const fmt = new Date(data + 'T12:00:00').toLocaleDateString('pt-PT', {
+      day: '2-digit', month: 'long', year: 'numeric'
+    });
+    document.getElementById('summary-card').innerHTML =
+      row('Valor',     '<span class="s-valor">€' + parseFloat(valor).toFixed(2) + '</span>') +
+      row('Categoria', cat) +
+      (desc ? row('Descrição', desc) : '') +
+      row('Data', fmt);
+    document.getElementById('form-view').style.display   = 'none';
+    document.getElementById('success-view').style.display = 'block';
+  })
+  .catch(() => alert('Erro de ligação. Verifica o internet e tenta novamente.'))
+  .finally(() => {
+    btn.disabled = false;
+    btn.textContent = 'Registar despesa';
+  });
+}
+
+function row(label, val) {
+  return '<div class="s-row"><span class="s-label">' + label + '</span><span class="s-val">' + val + '</span></div>';
+}
+
+function fecharDup() {
+  document.getElementById('overlay-dup').classList.remove('show');
+}
+
+function resetForm() {
+  document.getElementById('valor').value = '';
+  document.getElementById('desc').value  = '';
+  document.getElementById('data').value  = new Date().toISOString().split('T')[0];
+  document.getElementById('sym').style.color = '#ccc';
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.style.background = '#fafafa';
+    b.style.borderColor = '#e8e8e8';
+    b.style.color = '#666';
+    b.style.fontWeight = '400';
+    b.classList.remove('active');
+  });
+  cat = '';
+  document.getElementById('form-view').style.display   = 'block';
+  document.getElementById('success-view').style.display = 'none';
+}
+</script>
+</body>
+</html>
