@@ -98,6 +98,8 @@ textarea { min-height: 66px; resize: vertical; }
 .cat-val  { font-size: 13px; font-weight: 700; color: var(--verde); }
 .despesas-lista h3 { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 10px; padding: 0 2px; }
 .despesa-item { background: white; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.05); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.btn-apagar { background: none; border: none; color: #ddd; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: color .15s; }
+.btn-apagar:active { color: #e53935; }
 .despesa-left { flex: 1; min-width: 0; }
 .despesa-cat { font-size: 13px; font-weight: 600; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .despesa-desc { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -203,6 +205,18 @@ textarea { min-height: 66px; resize: vertical; }
     <div class="dup-btns">
       <button class="btn-cancel" onclick="fecharDup()">Cancelar</button>
       <button class="btn-confirm" onclick="enviar(true)">Registar mesmo assim</button>
+    </div>
+  </div>
+</div>
+
+<!-- overlay apagar -->
+<div class="overlay" id="overlay-apagar">
+  <div class="dup-card">
+    <h3>🗑️ Apagar despesa?</h3>
+    <p id="apagar-msg"></p>
+    <div class="dup-btns">
+      <button class="btn-cancel" onclick="fecharApagar()">Cancelar</button>
+      <button class="btn-confirm" id="btn-confirmar-apagar">Apagar</button>
     </div>
   </div>
 </div>
@@ -452,11 +466,41 @@ function renderMes(data) {
     html += '<div class="despesa-data">' + d.data + ' · ' + d.ts.split(' ')[1] + '</div>';
     html += '</div>';
     html += '<div class="despesa-right"><div class="despesa-valor">€' + d.valor.toFixed(2).replace('.',',') + '</div></div>';
+    html += '<button class="btn-apagar" onclick="confirmarApagar(' + d.rowId + ',\'' + d.categoria.replace(/'/g,"\\'") + '\',\'' + d.valor.toFixed(2) + '\')">🗑️</button>';
     html += '</div>';
   });
   html += '</div>';
 
   document.getElementById('mes-content').innerHTML = html;
+}
+
+// ── APAGAR ────────────────────────────────────────────────────────────
+var rowParaApagar = null;
+
+function confirmarApagar(rowId, categoria, valor) {
+  rowParaApagar = rowId;
+  document.getElementById('apagar-msg').textContent =
+    '€' + valor + ' em "' + categoria + '". Esta ação não pode ser desfeita.';
+  document.getElementById('overlay-apagar').classList.add('show');
+  document.getElementById('btn-confirmar-apagar').onclick = function() { apagarDespesa(rowId); };
+}
+
+function fecharApagar() {
+  document.getElementById('overlay-apagar').classList.remove('show');
+  rowParaApagar = null;
+}
+
+function apagarDespesa(rowId) {
+  fecharApagar();
+  var btn = document.getElementById('btn-confirmar-apagar');
+
+  jsonpCall({ acao: 'apagar', rowId: rowId }, function(err, res) {
+    if (err || !res.success) {
+      alert('Erro ao apagar. Tenta novamente.');
+      return;
+    }
+    carregarMes(); // recarrega a lista
+  });
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────
